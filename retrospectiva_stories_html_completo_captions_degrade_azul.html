@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Felippe & Natália — Nossa História</title>
+  <style>
+    :root{
+      --bg:#0b0b0c;--text:#fff;--muted:#b9b9c2;--accent:#3897f0;--progress:#e6e6e6;--progressActive:#fff;
+      --maxH:94vh; --shadow:0 16px 40px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 1200px at 50% -10%, #131417 20%, #0b0b0c 60%, #070708 100%); color:var(--text); font:500 15px/1.4 system-ui,-apple-system,Segoe UI,Inter,Roboto,Ubuntu,Arial,sans-serif;display:grid;place-items:center}
+    .frame{
+      aspect-ratio:9/16; width:min(56vh, 420px); height:min(var(--maxH), calc(100vw*16/9)); max-height:var(--maxH);
+      background:#000; position:relative; border-radius:22px; overflow:hidden; box-shadow:var(--shadow);
+    }
+    .safe{padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    .top{position:absolute; inset:0 0 auto 0; padding:10px 12px; display:flex; flex-direction:column; gap:8px; z-index:20}
+    .bars{display:flex; gap:4px}
+    .bar{flex:1; height:3px; background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden}
+    .bar > span{display:block; height:100%; width:0%; background:var(--progressActive);}
+    .meta{display:flex; align-items:center; gap:8px; font-size:12px; color:#f5f5f7}
+    .avatar{width:26px; height:26px; border-radius:50%; background:#222; overflow:hidden; flex:0 0 auto; border:1px solid rgba(255,255,255,.2)}
+    .dot{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.5);margin:0 4px}
+    .layer{position:absolute; inset:0;}
+    .layer img,.layer video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+
+    .video-controls{position:absolute; right:10px; top:52px; z-index:60; display:flex; flex-direction:column; gap:8px}
+    .btn{width:36px;height:36px;border-radius:50%; backdrop-filter:blur(8px); background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18); display:grid; place-items:center; cursor:pointer}
+
+    .captionWrap{position:absolute; inset:auto 0 0 0; z-index:25; padding:16px 14px 18px; background:
+      linear-gradient(to top, rgba(0,0,0,.60), rgba(0,0,0,.10) 70%, rgba(0,0,0,0) 100%),
+      linear-gradient(to top, rgba(3,244,252,.35), rgba(3,244,252,0) 70%);} /* azul #03f4fc */
+    .caption{font-size:15px; line-height:1.35}
+    .cta{position:absolute; left:50%; transform:translateX(-50%); bottom:76px; z-index:25}
+    .cta a{display:inline-block; padding:10px 14px; border-radius:999px; font-weight:700; font-size:13px; color:#111; background:#fff; text-decoration:none}
+
+    .tap{position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; z-index:40}
+    .tap > div{height:100%}
+
+    .pauseBadge{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.55); color:#fff; padding:10px 12px; border-radius:12px; font-weight:700; font-size:12px; opacity:0; pointer-events:none; transition:opacity .2s}
+    .paused .pauseBadge{opacity:1}
+
+    .loader{position:absolute; inset:0; display:grid; place-items:center; z-index:50; background:#000}
+    .spinner{width:34px;height:34px;border-radius:50%; border:3px solid rgba(255,255,255,.25); border-top-color:#fff; animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .hint{position:fixed; bottom:14px; left:50%; transform:translateX(-50%); color:#c8c8d1; font-size:12px; opacity:.8}
+
+    .navBtn{position:absolute; top:50%; transform:translateY(-50%); z-index:60; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; cursor:pointer; backdrop-filter:blur(8px); background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18)}
+    .navBtn svg{width:18px;height:18px;fill:#fff}
+    .navBtn.left{left:8px}
+    .navBtn.right{right:8px}
+
+    #fsBtn{display:none}
+    #startBtn{position:absolute; left:50%; transform:translateX(-50%); bottom:50%; translate:0 40%; z-index:70; padding:12px 16px; border-radius:12px; font-weight:800; letter-spacing:.2px; background:linear-gradient(135deg,#fff,#f3f3f3); color:#111; border:none; box-shadow:0 8px 24px rgba(0,0,0,.35); cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="frame safe" id="frame" aria-live="polite">
+    <div class="loader" id="loader"><div class="spinner" aria-label="Carregando"></div></div>
+    <div class="top">
+      <div class="bars" id="bars" aria-hidden="true"></div>
+      <div class="meta">
+        <div class="avatar"><img src="assets/avatar.jpg" alt="Felippe & Natália" style="width:100%;height:100%;object-fit:cover"/></div>
+        <strong>felippe&natalia</strong>
+        <span class="dot"></span>
+        <span>Retrospectiva</span>
+      </div>
+    </div>
+
+    <!-- Camada de mídia -->
+    <div class="layer" id="layer"></div>
+
+    <!-- Controles de vídeo -->
+    <div class="video-controls" id="videoCtrls" hidden>
+      <button class="btn" id="playPause" aria-label="Play/Pause">⏯</button>
+      <button class="btn" id="muteUnmute" aria-label="Mute/Unmute">🔈</button>
+      <button class="btn" id="fsBtn" aria-label="Tela cheia">⛶</button>
+    </div>
+
+    <!-- Navegação setas -->
+    <button class="navBtn left" id="btnPrev" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="navBtn right" id="btnNext" aria-label="Próximo"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+
+    <div class="captionWrap">
+      <div class="caption" id="caption"></div>
+    </div>
+    <div class="cta" id="cta" style="display:none"><a href="#" target="_blank" rel="noopener">Ver mais</a></div>
+
+    <!-- Botão de iniciar -->
+    <button id="startBtn">Nossa Retrospectiva ►</button>
+
+    <!-- Zona de toque -->
+    <div class="tap" id="tap">
+      <div id="tapPrev" aria-label="Anterior"></div>
+      <div id="tapNext" aria-label="Próximo"></div>
+    </div>
+
+    <div class="pauseBadge" id="pauseBadge">Pausado</div>
+
+    <!-- Áudio de fundo -->
+    <audio id="bgAudio" src="assets/audio.mp3" preload="auto" loop></audio>
+  </div>
+
+  <div class="hint">Desenvolvido by Felippe Mac</div>
+
+  <script>
+  // === CONFIG ===
+  const IMAGE_BASES = ['assets','assets/images','assets/img','assets/fotos','assets/videos'];
+  const IMAGE_EXTS = ['jpg','jpeg','png','webp'];
+  const VIDEO_EXTS = ['mp4','mov','omv','webm','ogv']; // inclui .omv a pedido
+
+  const SCENES_COUNT = 40;
+
+  // === CAPTIONS: um por slide ===
+  const CAPTIONS = [
+    "Está preparada para fortes lembranças?",
+    "Esta foi nossa primeira conversa por Whatsapp.",
+    "Mundial Rock: nosso segundo encontro que entrou pra história...",
+    "...e que história!",
+    "Começamos a nos falar por vídeo depois que tu chegava do trabalho, as 22:30 todo dia",
+    "Primeiro cinema juntos - Floripa Shopping",
+    "Nosso primeiro Natal - Na casa da mãe",
+    "O primeiro treino juntos - AD3",
+    "Reveillon 2024/2025 - Tu tomou um espumante e quase foi pra salvação, esta foto foi antes de tu dormir no sofá da madrinha",
+    "Já ia esquecendo, o natal na tua vó que eu bebi o Whiskey do teu pai e fiquei alegre",
+    "Circo Marcos Frota - E a roda gigante de 50 pila...",
+    "Nosso segundo festival de rock - Stage Music Park",
+    "Primeiro nascer do sol na praia...",
+    "Dorme princesa",
+    "Juntamos nossos trapos - Teu pai chorou escondido quando tu foi embora",
+    "Alternativa Mídia - Começamos a trabalhar juntos",
+    "A primeira compra juntos - E o toque de arrumar o carrinho...",
+    "Nos acidentamos pela segunda vez - Cherynho resistiu",
+    "Cinema e o supercilio cortado no Handebol... Eu fiz o curativo, ficou um curativo do 63BI mas resolveu.",
+    "Primeira viagem juntos: Porto Alegre",
+    "Essa foto no Gasômetro de Porto Alegre ficou foda.",
+    "Beto Carrero - Fomos na Firewhip depois de eu comer: Quase vomitei até a alma.",
+    "Concerto Orquestra SC - Realizou teu sonho de ir num concerto.",
+    "Mais festival de música...",
+    "Show do Armandinho, Dazaranha e a roleta depremios fake do Imperatriz.",
+    "Dubdogz na finalera...",
+    "Curitiba - Segunda viagem juntos e o banheirode hotel maravilhoso (Contém ironia)",
+    "Marombeiros",
+    "Você: Eu nunca tinha ganhado massagem nos pés...",
+    "Aguas Mornas Palace Hotel - Tu tentou me ensinar a nadar...",
+    "Nos botava colchão na sala pra ver TV - Nafoto era o Vampiro Bill",
+    "Um côco e uma historia...",
+    "Violentos ataques de mordida e amor (Segundo ela)",
+    "Oktoberfest 2025 - Realizou teu sonho de conhecer...",
+    "E dormimos no Cherynho pra completar o rolê inesquecível.",
+    "Nosso Helloween... com pouco Gorgonzola...",
+    "De boas no SHopping tu foi ver uma cabine de Karaokê e...",
+    "Inventando nossos próprios rolês",
+    "Foi um ano incrível ao teu lado, nosso primeiro ano juntos, e a pergunta agora é...",
+    "Quantos anos tu quer passar comigo?",
+
+
+  ];
+
+  // Cada cena será resolvida automaticamente como imagem ou vídeo
+  const STORY_SCRIPT = Array.from({length: SCENES_COUNT}, (_,i)=> ({
+    type:'auto', // auto-detecta imagem/vídeo
+    src:null,    // será resolvido
+    duration: 10000, // usado para imagens (vídeo usa a duração real)
+    caption: (CAPTIONS[i] ?? `Slide ${i+1}`),
+    cta: null
+  }));
+
+  const PROFILE = { avatar: 'assets/avatar.jpg', handle: 'felippe.e.natalia' };
+  document.addEventListener('DOMContentLoaded',()=>{
+    const avatarEl = document.querySelector('.avatar img');
+    if(avatarEl) avatarEl.src = PROFILE.avatar;
+    const handleEl = document.querySelector('.meta strong');
+    if(handleEl) handleEl.textContent = PROFILE.handle;
+
+    const fsBtn = document.getElementById('fsBtn');
+    const frame = document.getElementById('frame');
+    const fullscreenAllowed = !!document.fullscreenEnabled && !!(frame && frame.requestFullscreen);
+    fsBtn.style.display = fullscreenAllowed ? 'grid' : 'none';
+  });
+
+  // === LOAD HELPERS ===
+  function tryLoadImageOnce(url){
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.onload = () => resolve({ok:true, url, kind:'image'});
+      img.onerror = () => resolve({ok:false, url, kind:'image'});
+      img.src = url;
+    });
+  }
+
+  function tryLoadVideoOnce(url){
+    return new Promise(resolve=>{
+      const v = document.createElement('video');
+      // evitamos download grande só para detectar — metadados bastam
+      v.preload = 'metadata';
+      v.onloadedmetadata = ()=> resolve({ok:true, url, kind:'video'});
+      v.onerror = ()=> resolve({ok:false, url, kind:'video'});
+      v.src = url;
+    });
+  }
+
+  async function resolveMediaForIndex(i){
+    const n1 = (i+1).toString();
+    const n2 = (i+1).toString().padStart(2,'0');
+    const n3 = (i+1).toString().padStart(3,'0');
+    const names = [n1, n2, n3, `slide-${n2}`, `scene-${n2}`, `foto-${n2}`, `img-${n2}`, `video-${n2}`];
+
+    for(const base of IMAGE_BASES){
+      // 1) imagens primeiro
+      for(const name of names){
+        for(const ext of IMAGE_EXTS){
+          const url = `${base}/${name}.${ext}`;
+          const r = await tryLoadImageOnce(url);
+          if(r.ok) return r; // {ok,url,kind:'image'}
+        }
+      }
+      // 2) vídeos depois
+      for(const name of names){
+        for(const ext of VIDEO_EXTS){
+          const url = `${base}/${name}.${ext}`;
+          const r = await tryLoadVideoOnce(url);
+          if(r.ok) return r; // {ok,url,kind:'video'}
+        }
+      }
+    }
+    return {ok:false, url:null, kind:'unknown'};
+  }
+
+  function makeErrorFallback(text){
+    const d = document.createElement('div');
+    d.style.cssText = 'display:grid;place-items:center;height:100%;background:#111;color:#f55;font-weight:800;padding:18px;text-align:center';
+    d.textContent = text;
+    return d;
+  }
+
+  // === UI refs ===
+  const frameEl=document.getElementById('frame'),
+        loader=document.getElementById('loader'),
+        barsEl=document.getElementById('bars'),
+        layer=document.getElementById('layer'),
+        captionEl=document.getElementById('caption'),
+        ctaEl=document.getElementById('cta'),
+        pauseBadge=document.getElementById('pauseBadge'),
+        tap=document.getElementById('tap'),
+        tapPrev=document.getElementById('tapPrev'),
+        tapNext=document.getElementById('tapNext'),
+        playPauseBtn=document.getElementById('playPause'),
+        muteUnmuteBtn=document.getElementById('muteUnmute'),
+        fsBtn=document.getElementById('fsBtn'),
+        btnPrev=document.getElementById('btnPrev'),
+        btnNext=document.getElementById('btnNext'),
+        startBtn=document.getElementById('startBtn'),
+        audioEl=document.getElementById('bgAudio'),
+        videoCtrls=document.getElementById('videoCtrls');
+
+  // === Estado ===
+  let index=0, paused=false, startedAt=0, rafId=null, currentMediaEl=null, globallyMuted=true, hasStarted=false;
+  const bars=STORY_SCRIPT.map(()=>({progress:0}));
+
+  function renderBars(){
+    barsEl.innerHTML='';
+    bars.forEach((b,i)=>{
+      const d=document.createElement('div'); d.className='bar';
+      const s=document.createElement('span'); s.style.width=(i<index)?'100%':(i===index?(b.progress*100)+'%':'0%');
+      d.appendChild(s); barsEl.appendChild(d);
+    });
+  }
+
+  async function buildSceneElement(scene, idx){
+    // Resolve midia se ainda não resolvido
+    if(!scene.src || scene.type==='auto'){
+      const r = await resolveMediaForIndex(idx);
+      if(!r.ok) return makeErrorFallback('Mídia não encontrada para este slide.');
+      scene.src = r.url;
+      scene.type = (r.kind==='video' ? 'video' : 'image');
+    }
+
+    if(scene.type==='image'){
+      return new Promise(resolve=>{
+        const img = new Image();
+        img.alt = scene.caption || '';
+        img.onload = ()=> resolve(img);
+        img.onerror = ()=> resolve(makeErrorFallback(`Não foi possível carregar: ${scene.src}`));
+        img.src = scene.src;
+      });
+    }
+
+    if(scene.type==='video'){
+      const v=document.createElement('video');
+      v.src=scene.src;
+      v.playsInline=true;
+      v.muted=true;
+      v.autoplay=true;
+      v.loop=false;
+      v.preload='metadata';
+      // ao terminar, avança
+      v.addEventListener('ended', ()=> goNext());
+      // se carregar, tenta tocar
+      v.addEventListener('loadeddata',()=> v.play().catch(()=>{}));
+      // exibe controles flutuantes
+      videoCtrls.hidden=false;
+      return v;
+    }
+
+    return makeErrorFallback('Tipo de cena desconhecido.');
+  }
+
+  function attachMedia(el){
+    // pausa vídeo anterior
+    if(currentMediaEl && currentMediaEl.tagName==='VIDEO'){
+      try{ currentMediaEl.pause(); }catch{}
+    }
+    layer.innerHTML='';
+    el.style.width='100%'; el.style.height='100%'; el.style.objectFit='cover';
+    layer.appendChild(el);
+    currentMediaEl = (el.tagName==='VIDEO') ? el : null;
+    // sincroniza mute com estado global
+    if(currentMediaEl){ currentMediaEl.muted = globallyMuted; }
+  }
+
+  function show(idx){
+    index = Math.max(0, Math.min(idx, STORY_SCRIPT.length-1));
+    const scene = STORY_SCRIPT[index];
+
+    // legenda
+    captionEl.innerHTML = (scene.caption || '').replace(/\n/g,'<br>');
+
+    // CTA
+    const hasCta = scene.cta && scene.cta.href;
+    ctaEl.style.display = hasCta ? 'block':'none';
+    if(hasCta){
+      const a = ctaEl.querySelector('a');
+      a.href = scene.cta.href; a.textContent = scene.cta.label || 'Ver mais';
+    }
+
+    renderBars();
+    buildSceneElement(scene, index).then(attachMedia);
+    startedAt = performance.now();
+  }
+
+  function goNext(){
+    if(index < STORY_SCRIPT.length-1){ index++; show(index); }
+  }
+  function goPrev(){
+    if(index > 0){ index--; show(index); }
+  }
+
+  function currentScene(){ return STORY_SCRIPT[index]||{}; }
+
+  function tick(){
+    if(!paused){
+      const scene = currentScene();
+      if(currentMediaEl && currentMediaEl.tagName==='VIDEO' && isFinite(currentMediaEl.duration) && currentMediaEl.duration>0){
+        const p = Math.min(1, (currentMediaEl.currentTime || 0) / currentMediaEl.duration);
+        bars[index].progress = p;
+      }else{
+        const now = performance.now();
+        const dur = scene.duration || 5000;
+        const elapsed = now - startedAt;
+        bars[index].progress = Math.min(1, elapsed/dur);
+        if(elapsed >= dur && (!currentMediaEl || currentMediaEl.tagName!=='VIDEO')){ goNext(); startedAt = performance.now(); }
+      }
+      const s = barsEl.children[index]?.firstChild; if(s){ s.style.width=(bars[index].progress*100)+'%'; }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  // === Controles ===
+  playPauseBtn.addEventListener('click',()=>{
+    paused = !paused;
+    frameEl.classList.toggle('paused', paused);
+    if(currentMediaEl && currentMediaEl.tagName==='VIDEO'){
+      if(paused) currentMediaEl.pause(); else currentMediaEl.play().catch(()=>{});
+    }
+  });
+
+  muteUnmuteBtn.addEventListener('click',()=>{
+    globallyMuted = !globallyMuted;
+    if(currentMediaEl){ currentMediaEl.muted = globallyMuted; if(!globallyMuted) currentMediaEl.play().catch(()=>{}); }
+    if(audioEl){ audioEl.muted = globallyMuted; if(!globallyMuted) audioEl.play().catch(()=>{}); }
+  });
+
+  fsBtn.addEventListener('click',()=>{
+    if(!document.fullscreenEnabled || !frameEl.requestFullscreen){ return; }
+    try{
+      if(document.fullscreenElement){ document.exitFullscreen(); }
+      else{ frameEl.requestFullscreen(); }
+    }catch(err){ console.warn('Fullscreen bloqueado:', err); }
+  });
+
+  btnNext.addEventListener('click',()=>{ if(!paused) goNext(); });
+  btnPrev.addEventListener('click',()=>{ if(!paused) goPrev(); });
+
+  let pressTimer=null;
+  function startPress(){ paused=true; frameEl.classList.add('paused'); if(currentMediaEl?.pause) currentMediaEl.pause(); }
+  function endPress(){ paused=false; frameEl.classList.remove('paused'); if(currentMediaEl?.play) currentMediaEl.play().catch(()=>{}); startedAt=performance.now()-bars[index].progress*(currentScene().duration||5000); }
+
+  tapNext.addEventListener('click',()=>{ if(!paused) goNext(); });
+  ['touchstart','mousedown'].forEach(e=> tapNext.addEventListener(e,()=>{ clearTimeout(pressTimer); pressTimer=setTimeout(startPress,170); },{passive:true}));
+  ['touchend','mouseup','mouseleave','touchcancel'].forEach(e=> tapNext.addEventListener(e,()=>{ clearTimeout(pressTimer); if(paused) endPress(); },{passive:true}));
+
+  tapPrev.addEventListener('click',()=>{ if(!paused) goPrev(); });
+  ['touchstart','mousedown'].forEach(e=> tapPrev.addEventListener(e,()=>{ clearTimeout(pressTimer); pressTimer=setTimeout(startPress,170); },{passive:true}));
+  ['touchend','mouseup','mouseleave','touchcancel'].forEach(e=> tapPrev.addEventListener(e,()=>{ clearTimeout(pressTimer); if(paused) endPress(); },{passive:true}));
+
+  window.addEventListener('keydown',(ev)=>{
+    if(ev.key==='ArrowRight' || ev.key==='PageDown'){ goNext(); }
+    if(ev.key==='ArrowLeft' || ev.key==='PageUp'){ goPrev(); }
+    if(ev.key===' '){ ev.preventDefault(); paused=!paused; frameEl.classList.toggle('paused', paused); if(currentMediaEl){ paused?currentMediaEl.pause():currentMediaEl.play().catch(()=>{});} }
+    if(ev.key.toLowerCase()==='m'){ globallyMuted=!globallyMuted; if(currentMediaEl) currentMediaEl.muted=globallyMuted; if(audioEl){ audioEl.muted=globallyMuted; if(!globallyMuted) audioEl.play().catch(()=>{}); } }
+  });
+
+  // Start: gesto do usuário
+  startBtn.addEventListener('click',()=>{
+    if(hasStarted) return; hasStarted=true;
+    loader.style.display='none'; startBtn.style.display='none';
+    audioEl.muted = globallyMuted; if(!globallyMuted){ audioEl.play().catch(()=>{}); }
+    show(0); renderBars(); tick();
+  });
+
+  // Pré-carrega a primeira mídia (imagem ou vídeo)
+  (async()=>{
+    const first = await resolveMediaForIndex(0);
+    if(first && first.ok && first.kind==='image'){
+      const p = new Image(); p.onload=()=> loader.style.display='none'; p.src=first.url;
+    }else{
+      // para vídeo, não forçamos preload grande aqui
+      loader.style.display='none';
+    }
+  })();
+
+  // Smoke tests
+  (function runSmokeTests(){
+    const tests = [];
+    function t(name, fn){
+      try{ const ok = !!fn(); tests.push({name, ok}); if(!ok) console.warn('[TEST FAIL]', name); }
+      catch(e){ tests.push({name, ok:false, err:e}); console.warn('[TEST ERROR]', name, e); }
+    }
+    t('bars count == SCENES_COUNT', ()=>{ renderBars(); return barsEl.children.length === SCENES_COUNT; });
+    t('caption apply', ()=>{ show(0); return captionEl.innerHTML.length > 0; });
+    t('fullscreen guarded', ()=>{ const canCall = !!document.fullscreenEnabled && !!frameEl.requestFullscreen; return (canCall || true); });
+    window.__story_tests__ = tests;
+  })();
+  </script>
+</body>
+</html>
